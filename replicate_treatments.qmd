@@ -4,14 +4,9 @@ format: pdf
 editor: visual
 ---
 
-
-
 ## Empirical example
 
-
-**Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
-As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
-
+**Two outcome variables:** total output and total profit from self-employment activities in the past 12 months. As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
 
 ```{r}
 setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
@@ -19,8 +14,6 @@ setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice
 dir_data <- "dataset_folder/data_code/Input/"
 
 ```
-
-
 
 ```{r}
 #| echo: false
@@ -48,18 +41,10 @@ names(Microcredit_EL_mini_anonym)
 
 ```
 
-
 ```{r}
 
 names(Microcredit_BL_mini_anonym)
 
+## 123
 
 ```
-
-
-
-
-
-
-
-
