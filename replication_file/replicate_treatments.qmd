@@ -1,0 +1,65 @@
+---
+title: "1st problem set: Exercise 2.1"
+format: pdf
+editor: visual
+---
+
+
+
+## Empirical example
+
+
+**Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
+As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
+
+
+```{r}
+setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
+
+dir_data <- "dataset_folder/data_code/Input/"
+
+```
+
+
+
+```{r}
+#| echo: false
+
+library(haven)
+
+# Household survey data
+# Baseline household survey 
+Microcredit_BL_mini_anonym <- read_dta(  paste0(dir_data,"Microcredit_BL_mini_anonym.dta") )
+View(Microcredit_BL_mini_anonym)
+dim(Microcredit_BL_mini_anonym)
+
+# Endline household survey
+Microcredit_EL_mini_anonym <- read_dta(  paste0(dir_data,"Microcredit_EL_mini_anonym.dta") )
+View(Microcredit_EL_mini_anonym)
+dim(Microcredit_EL_mini_anonym) 
+
+# Mini Survey data: baseline household survey data
+# Short survey instrument including the key variables predicting a higher likelihood to borrow?
+Microcredit_MS_anonym <- read_dta(  paste0(dir_data,"Microcredit_MS_anonym.dta") )
+View(Microcredit_MS_anonym)
+dim(Microcredit_MS_anonym)
+
+names(Microcredit_EL_mini_anonym)
+
+```
+
+
+```{r}
+
+names(Microcredit_BL_mini_anonym)
+
+
+```
+
+
+
+
+
+
+
+
