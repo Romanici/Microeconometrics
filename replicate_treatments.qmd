@@ -9,9 +9,14 @@ editor: visual
 **Two outcome variables:** total output and total profit from self-employment activities in the past 12 months. As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
 
 ```{r}
+library(tidyverse)
+library(knitr)
+library(plm)
+
 setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
 
 dir_data <- "dataset_folder/data_code/Input/"
+dir_final_data <- "dataset_folder/data_code/Input/"
 
 ```
 
@@ -41,10 +46,242 @@ names(Microcredit_EL_mini_anonym)
 
 ```
 
+## Covariates
+
+Number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey,
+
 ```{r}
 
-names(Microcredit_BL_mini_anonym)
+names(Microcredit_EL_mini_anonym)
 
-## 1234
+# id3: Village code
+# id4: Household code
+# id12: result of visit
+# im1: number of ppl living in the household 
+# id_rep
+# a3_1: Relationship to head of the household
+# a7_1: Age m1
+# a8_1: Highest level of educaiton
+# a3_2: Relationship to head of the household for m2
+# 
+# 
+# 1-19 variables for each member of the household
+# 24 members
+# then the next variable is a12_p1: hours spending working on an independent activity in the last 7 days for m1
+# b6: type of housing
+# b11: are u an owner, 1/2/3/4
+# b12_2: did u purchase u house?
+# c6: Are u or anyone in the household an entrepreneur?
+# d2_1: sector of activity, d2_2, d2_3,,, until 6
+# 
+# i1: How many outstanding loans does the household have?
+# i2: How many loans did the household have that matured during the last twelve months ?
+# i4_1: How long ago did the household take the loan?
+# i9_1: loan amount, there are several variables for credit
+
+```
+
+```{r}
+library(haven)
+setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
+
+dir_data <- "dataset_folder/data_code/Input/"
+dir_final_data <- "dataset_folder/data_code/Output/"
+
+dd <- read_dta(  paste0(dir_final_data,"final_before_replication.dta") )
+dim(dd)
+View(dd)
+
+dd_baseline <- read_dta(  paste0(dir_final_data,"baseline_minienquete_outcomes.dta") )
+dim(dd_baseline)
+dd_endline <- read_dta(  paste0(dir_final_data,"endline_minienquete_outcomes.dta") )
+dim(dd_endline)
+```
+
+```{r}
+length( intersect( names(dd_baseline), names(dd_endline)) )
+
+covariates <- c("ident", "id3", "a7_1", "a3_1", "a3_2", "i2")
+dd_baseline_sub <- dd_baseline[,covariates]
+dd_endline_sub <- dd_endline[,covariates]
+
+dd_join <- dplyr::full_join(dd_baseline_sub, dd_endline_sub, by="ident", suffix = c("_base", "_end"))
+dim(dd_join)
+
+df <- dplyr::inner_join(dd_join, dd, by="ident")
+dim(df)
+
+# id3: Village code
+# a3_1: Relationship to head of the household
+# a7_1: Age m1
+# a3_2: Relationship to head of the household for m2
+# i2: How many loans did the household have that matured during the last twelve months ?
+
+
+
+```
+
+```{r}
+
+
+View( data.frame(df$id3_base, df$id3_end))
+
+table(df$id3_base)
+```
+
+profit_total output_total members_resid: number of members nadults_resid client: 1 if took a loan from Al Amana loansamt_total \_merge weightproba: inverse of the probability of being sampled id3: Village code a3_1: Relationship to head of the household a7_1: Age m1 a3_2: Relationship to head of the household for m2 i2: How many loans did the household have that matured during the last twelve months ?
+
+indicators for households doing animal husbandry, doing other non-agricultural activity
+
+work_livestock_m selfempl_livestock selfempl_agri self_empl: if self-employment activity
+
+```{r}
+
+vvv <- c("profit_total", "output_total", "client", "loansamt_total", "members_resid", "nadults_resid", "weightproba", "ident", "id3", "a3_1", "a7_1", "a3_2", "i2", "selfempl_livestock", "selfempl_agri", "self_empl")
+
+dfin <- df %>% 
+  select(profit_total, output_total, client, loansamt_total, members_resid, nadults_resid, weightproba, 
+         ident, id3, a3_1, a7_1, a3_2, i2, selfempl_livestock, selfempl_agri, self_empl) %>% 
+  rename( id_village = id3, num_loans_12 = i2, age_m1 = a7_1, rel_head_m2 = a3_2, rel_head_m1 = a3_1)
+
+
+names(df)
+
+View( data.frame(df$ident, df$a3_1_base, df$a3_1_end, df$`_merge` ) )
+
+```
+
+```{r}
+
+dd2 <- dd %>% 
+  select(id3, id4, treatment, paire, profit_total, output_total, client, loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, `_merge`, head_age, ) %>% 
+  rename( id_village = id3, id_household = id4, merge = `_merge`) %>% 
+  mutate( across( c( id_village, id_household, treatment, paire, ident, 
+             selfempl_livestock, selfempl_agri, self_empl, merge ), factor) )
+  
+
+table(dd2$paire)
+sum( is.na(dd2$paire) )
+table(dd2$id3)
+
+data.frame(dd2$paire, dd2$id3)
+table(dd2$paire, dd2$treatment)
+
+sort( unique( dd2$paire [is.na(dd2$id3)] ) )
+table( dd2$paire [is.na(dd2$id3)] )
+
+
+table(dd2$treatment)
+table(dd2$client)
+table(dd2$client, dd2$treatment)
+432/5092
+432/(2298+432) # 15.8%
+
+table(dd2$`_merge`)
+# 1 only endline, 2 only baseline, 3 all
+sum( is.na( dd2$profit_total ) )
+table( dd2$`_merge`[is.na( dd2$profit_total )] )
+
+# delete 2, and for 1 introduce dummy variable 
+347 / ( sum(dd2$`_merge` == 3) + 347 )  # 7.8 attrition rate
+
+sum( duplicated(dd2$id4) )
+dim(dd2)
+anyDuplicated(dd2$id4)
+duplicated(dd2$id4)
+
+duplicated(c(1:4,4,  5, 6) )
+
+dd2 %>%  
+  group_by(id3, id4, paire) %>% 
+  summarise( count = n() ) %>% 
+  View()
+
+# 120 households
+
+dd2 %>%  
+  select(id3, id4, paire, treatment) %>% 
+  arrange(paire) %>% 
+  View()
+
+dd2 %>% 
+  group_by(paire, id3) %>% 
+  summarise( n() )
+
+
+dd2 %>% 
+  group_by(paire) 
+  # id3: Village code
+# id4: Household code
+  
+# id3: Village code
+# id4: Household code
+
+dd2c <- dd2[dd2$`_merge` != 2, ]
+
+table(dd2c$id_village)
+table(dd2c$treatment)
+table(dd2c$client)
+table(dd2c$client, dd2c$treatment, useNA = "ifany" )
+432/(432+2298+11) # 15.8% of the treated units take a loan
+432/nrow(dd2c) # 7.8% 
+
+#####
+dd2c %>% 
+  group_by(paire) %>% 
+  summarise( prop = sum(client)/n(), num_villages = length(unique(id_village) ) ) %>% 
+  pull(num_villages) %>% 
+  table() %>% 
+  kable()
+#####
+
+dd2c %>% 
+  group_by(paire) %>% 
+  summarise( prop = sum(client)/n(), num_villages = length(unique(id_village) ) ) %>% 
+  pull(num_villages) %>% 
+  mean()
+
+#table(dd2c$id_household)
+
+# total number of villages:
+4465 + 1433
+
+```
+
+## Part 3.
+
+Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
+
+
+```{r}
+# or output_total
+# mod_test <- lm(profit_total ~ )
+
+# estimate the fixed effects regression with plm()
+lm_profit <- plm(profit_total ~ treatment + members_resid + nadults_resid + 
+                  selfempl_livestock + selfempl_agri + self_empl, 
+                    data = dd2c,
+                    index = c("paire"), 
+                    model = "within")
+
+lm_output <- plm(output_total ~ treatment + members_resid + nadults_resid + 
+                  selfempl_livestock + selfempl_agri + self_empl, 
+                    data = dd2c,
+                    index = c("paire"), 
+                    model = "within")
+
+
+# print summary using robust standard errors
+coeftest(fatal_fe_mod, vcov. = vcovHC, type = "HC1")
+
+```
+
+```{r}
+dd2 <- dd %>% 
+  select(id3, id4, treatment, paire, profit_total, output_total, client, loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, `_merge`) %>% 
+  rename( id_village = id3, id_household = id4, merge = `_merge`) %>% 
+  mutate( across( c( id_village, id_household, treatment, paire, ident, 
+             selfempl_livestock, selfempl_agri, self_empl, merge ), factor) )
+
 
 ```
