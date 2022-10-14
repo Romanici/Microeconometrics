@@ -1,10 +1,21 @@
 ---
-title: "1st problem set: Exercise 2.1"
+title: "HA 2: 2.1 Emripical Example"
 format: pdf
 editor: visual
+authors: Agustin Fernandez, Jiale Zhang
 ---
 
 ## Empirical example
+
+2.1
+
+1.  The population the authors would like to analyze:
+
+    The sample they ended up using:
+
+    The detailed description of the treatment:
+
+    The detailed description of the experimental design: The study has three good features that make it a good complement to existing papers. First, there is no other microcredit penetration in the area studied, before or after introduction of the product, also they found the effect were mainly on the borrowers, so the exclusion assumption is satisfied to some extent since the product is unique. Second,
 
 **Two outcome variables:** total output and total profit from self-employment activities in the past 12 months. As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
 
@@ -251,7 +262,6 @@ dd2c %>%
 ## Part 3.
 
 Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
-
 
 ```{r}
 # or output_total
