@@ -1,0 +1,90 @@
+---
+title: "2on problem set: Exercise 2.1"
+format: pdf
+editor: visual
+---
+
+## Empirical example
+
+**Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
+
+As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
+
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(plm)
+library(haven)
+library(lmtest)
+```
+
+```{r}
+setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
+
+dir_data <- "dataset_folder/data_code/Input/"
+dir_final_data <- "dataset_folder/data_code/Output/"
+
+dd <- read_dta(  paste0(dir_final_data,"final_before_replication.dta") )
+dim(dd)
+#View(dd)
+
+dd_baseline <- read_dta(  paste0(dir_final_data,"baseline_minienquete_outcomes.dta") )
+dim(dd_baseline)
+dd_endline <- read_dta(  paste0(dir_final_data,"endline_minienquete_outcomes.dta") )
+dim(dd_endline)
+```
+
+
+
+```{r}
+
+
+dd2 <- dd %>% 
+  select(id3, id4, treatment, paire, demi_paire,  profit_total, output_total, client, loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, `_merge`, head_age, head_male) %>% 
+  rename( id_village = id3, id_household = id4, merge = `_merge`) %>% 
+  mutate( across( c( id_village, id_household, treatment, paire, ident, 
+             selfempl_livestock, selfempl_agri, self_empl, merge ), factor) )
+
+dd2c <- dd2[dd2$merge != 2, ]
+
+```
+
+
+
+## Part 2.
+
+Analyze are the total output and total profit from self-employment activities
+in the past 12 months.
+
+
+```{r}
+
+# estimate the fixed effects regression with plm()
+lm_profit <- plm(profit_total ~ treatment + members_resid + nadults_resid + 
+                  selfempl_livestock + selfempl_agri + self_empl, 
+                    data = dd2c,
+                    index = c("paire"), 
+                    model = "within")
+
+lm_output <- plm(output_total ~ treatment + members_resid + nadults_resid + 
+                  selfempl_livestock + selfempl_agri + self_empl, 
+                    data = dd2c,
+                    index = c("paire"), 
+                    model = "within")
+
+
+# print summary using robust standard errors
+lmtest::coeftest(lm_profit, vcov. = vcovHC, type = "HC3", cluster = "group")
+lmtest::coeftest(lm_output, vcov. = vcovHC, type = "HC3", cluster = "group")
+
+```
+
+
+
+## Part 3.
+
+Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
+
+
+
