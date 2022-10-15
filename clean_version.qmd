@@ -7,17 +7,60 @@ authors: Agustin Fernandez, Jiale Zhang
 
 ## Empirical example
 
-1.  The population the authors would like to analyze: Population in nondensely populated rural areas in Morocco between 2006 and 2007, where there is no other microcredit penetration before or after the introduction of the product and for the study.
+1.  **The population the authors would like to analyze**: Population in nondensely populated rural areas in Morocco between 2006 and 2007, where there is no other microcredit penetration before or after the introduction of the product and for the study.
 
-    The sample they ended up using: 4465 \* 92% + 1433 = 5551 households from 81 pairs of villages belonging to 47 branches. Branches are based on observable characteristics including number of households, accessibility to the center of the community, existing infrastructure, type of activities carried out by the households, type of agriculture activities.
+    **The sample they ended up using**: 4465 \* 92% + 1433 = 5551 households from 81 pairs of villages belonging to 47 branches. Branches are based on observable characteristics including number of households, accessibility to the center of the community, existing infrastructure, type of activities carried out by the households, type of agriculture activities.
 
-    And the households are selected based on their propensity to borrow, which is measured twice by using pilot data and later the whole sample and the census data. Specifically, in the 4465 households there are two samples from the top of the propensity score distribution and random positions of the distribution.
+    And the households are selected based on their propensity to borrow, which is measured twice by using pilot data and later the whole sample and the census data. The first 4465 households are selected by the first propensity score and the 1433 households are later added using the second propensity score. Specifically, in the 4465 households there are two samples from the top of the propensity score distribution and random positions of the distribution, and they are from 4 different waves of the baseline survey.
 
-    The detailed description of the treatment:
+    *Note: The first model for propensity scores is based on regressors including*
 
-    The detailed description of the experimental design: The study has three good features that make it a good complement to existing papers. First, there is no other microcredit penetration in the area studied, before or after introduction of the product, also they found the effect were mainly on the borrowers, so the exclusion assumption is satisfied to some extent since the product is unique. Second, their sampling design is good in the sense that it allows them to capture the effect on borrowers.
+    *Does more than three self-employment activities*
 
-Third, they proposed a strategy to test for externalities on nonborrowers, and to estimate direct effect on borrowers.
+    *Does trading as self-employment activity*
+
+    *Share number of members with trading, services or handicraft as main activity to number of members*
+
+    *Owns land*
+
+    *Rents land*
+
+    *Have not bought agriculture productive assets over the past 12 months*
+
+    *Uses sickle and rake (in agriculture)*
+
+    *ln(# of olive and argan trees)*
+
+    *\# of cows bought over the past 12 months*
+
+    *Gets a pension*
+
+    *Has a radio*
+
+    *Has a fiber mat*
+
+    *Phone expenses over the past month (in MAD)*
+
+    *Clothes expenses over the past month (in MAD)*
+
+    *Had an outstanding formal loan over the past 12 months*
+
+    *ln(amount that would be able to reimburse monthly (in MAD))*
+
+    *Would be ready to form a 4-person group and guarantee a loan mutually*
+
+    *Would uptake a loan of 3,000 MAD to be repaid in 9 monthly installments of 400 MAD.*
+
+    *And it is conducted on households in the first wave six months after the introduction of the product.*
+
+    T**he detailed description of the treatment**: The microcredit product Al Amana offers is a group liability loan. Group are formed by three to four members who agree to mutually guarantee the reimbursement of their loans. After the baseline survey was completed in each wave, one treatment and one
+    control village were randomly assigned within each pair. In treatment villages, credit agents started to promote microcredit and to provide loans immediately after the baseline survey. They visited villages once a week and performed various promotional activities: door-to-door campaigns, meetings with current and potential clients, contact with village associations, cooperatives, and women's centers, etc.
+
+    **The detailed description of the experimental design**: The authors used 81 pairs of villages in the population they intended to analyze. There were four waves of introduction of the product. Around 100 households in each of the 7 pairs of initial villages were surveyed extensively in the pilot case. One village in each pair is later chosen to be the treatment village and introduced the product. In the treatment villages, the households' credit take-up in the next six months were recorded. With the extensive data collected earlier as well as credit take-up, a model for propensity to borrow was estimated.
+
+    In the following three waves, authors conducted similar baseline surveys with same sampling strategy as the pilot wave, including variables that were found to have significant impact on the propensity score. Treatment and control villages were randomly selected within the pairs and same treatment were given to the treatment villages.
+
+    Two years later, the authors used the whole sample and census data to re-estimate credit take-up model. Using the new propensity score, they further selected 1433 households with even higher propensity scores to borrow. Also, the households in the top quartile of the score (in treatment and control group) and five other random households in the villages were interviewed again, this amount adds up to 4465.
 
 **Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
 
