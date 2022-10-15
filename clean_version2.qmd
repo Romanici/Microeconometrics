@@ -1,0 +1,341 @@
+---
+title: "2on problem set: Exercise 2.1 empirical example"
+format: pdf
+editor: source
+author: Agustin Fernandez, Jiale Zhang
+---
+
+
+
+1. **The population the authors would like to analyze**: Population in nondensely populated rural areas in Morocco between 2006 and 2007, where there is no other microcredit penetration before or after the introduction of the product and for the study.  
+
+2. **The sample they ended up using**: $4465 * 92% + 1433 = 5551$ households from 81 pairs of villages belonging to 47 branches. Branches are based on observable characteristics including number of households, accessibility to the center of the community, existing infrastructure, type of activities carried out by the households, type of agriculture activities.
+
+And the households are selected based on their propensity to borrow, which is measured twice by using pilot data and later the whole sample and the census data. The first 4465 households are selected by the first propensity score and the 1433 households are later added using the second propensity score. Specifically, in the 4465 households there are two samples from the top of the propensity score distribution and random positions of the distribution, and they are from 4 different waves of the baseline survey.
+
+*Note: The first model for propensity scores is based on regressors including:* 
+  
+* Does more than three self-employment activities 
+* Does trading as self-employment activity 
+* Share number of members with trading, services or handicraft as main activity to number of members 
+* Owns land 
+* Rents land 
+* Have not bought agriculture productive assets over the past 12 months 
+* Uses sickle and rake (in agriculture) 
+* ln(# of olive and argan trees) 
+* Number of cows bought over the past 12 months 
+* Gets a pension 
+* Has a radio 
+* Has a fiber mat 
+* Phone expenses over the past month (in MAD) 
+* Clothes expenses over the past month (in MAD) 
+* Had an outstanding formal loan over the past 12 months 
+* ln(amount that would be able to reimburse monthly (in MAD)) 
+* Would be ready to form a 4-person group and guarantee a loan mutually 
+* Would uptake a loan of 3,000 MAD to be repaid in 9 monthly installments of 400 MAD. 
+* And it is conducted on households in the first wave six months after the introduction of the product. 
+
+3. **The detailed description of the treatment**: The microcredit product Al Amana offers is a group liability loan. Group are formed by three to four members who agree to mutually guarantee the reimbursement of their loans. After the baseline survey was completed in each wave, one treatment and one control village were randomly assigned within each pair. In treatment villages, credit agents started to promote microcredit and to provide loans immediately after the baseline survey. They visited villages once a week and performed various promotional activities: door-to-door campaigns, meetings with current and potential clients, contact with village associations, cooperatives, and women's centers, etc.  
+
+4. **The detailed description of the experimental design**: The authors used 81 pairs of villages in the population they intended to analyze. There were four waves of introduction of the product. Around 100 households in each of the 7 pairs of initial villages were surveyed extensively in the pilot case. One village in each pair is later chosen to be the treatment village and introduced the product. In the treatment villages, the households' credit take-up in the next six months were recorded. With the extensive data collected earlier as well as credit take-up, a model for propensity to borrow was estimated.
+
+In the following three waves, authors conducted similar baseline surveys with same sampling strategy as the pilot wave, including variables that were found to have significant impact on the propensity score. Treatment and control villages were randomly selected within the pairs and same treatment were given to the treatment villages.
+
+Two years later, the authors used the whole sample and census data to re-estimate credit take-up model. Using the new propensity score, they further selected 1433 households with even higher propensity scores to borrow. Also, the households in the top quartile of the score (in treatment and control group) and five other random households in the villages were interviewed again, this amount adds up to 4465.
+
+\newpage
+
+# Part 1.
+
+\textcolor{blue}
+{
+As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
+}
+
+**Variables used**  
+  
+a) **Identificators**: id_household, id_village, paire, demi_paire, _merge, ident. 
+b) **Outcome variables**: profit_total, output_total. 
+c) **Treatment variable**: treatment, client (if it has taken a loan). 
+c) **Covariates**: loansamt_total, members_resid, nadults_resid, selfempl_livestock, selfempl_agri, self_empl, head_age, head_male. 
+
+
+```{r}
+#| output: false
+
+library(haven) # read dta data
+library(tidyverse)
+library(knitr)
+library(plm) # FE regression
+library(lmtest) # coefficients FE reg.
+library(rsample) # bootstrapping
+library(randomForest)
+
+# library(devtools)
+# install_github("swager/crossEstimation")
+# library(crossEstimation)
+```
+
+
+* Baseline survey has 4465 observations and 3963 variables.   
+* Endline survey has 5551 observations and 5137 variables.  
+* The join of the two previous surveys has 5898 observations and 594 variables (after the preprocessing).  
+
+```{r}
+#| output: false
+#| echo: false
+
+setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
+
+dir_data <- "dataset_folder/data_code/Input/"
+dir_final_data <- "dataset_folder/data_code/Output/"
+
+dd <- read_dta(  paste0(dir_final_data,"final_before_replication.dta") )
+dim(dd)
+#View(dd)
+
+## Baseline and Endline datasets not needed
+dd_baseline <- read_dta(  paste0(dir_final_data,"baseline_minienquete_outcomes.dta") )
+dim(dd_baseline)
+dd_endline <- read_dta(  paste0(dir_final_data,"endline_minienquete_outcomes.dta") )
+dim(dd_endline)
+```
+
+We have merge == 2 when the baseline observation was not interviewed again two years later for the Baseline interview. We can drop these observations since we don't have the outcomes.
+
+```{r}
+
+dd2 <- dd %>% 
+  select(id3, id4, treatment, paire, demi_paire,  profit_total, output_total, 
+         client, loansamt_total, members_resid, nadults_resid, weightproba, ident,  
+         selfempl_livestock, selfempl_agri, self_empl, `_merge`, head_age, head_male) %>% 
+  rename( id_village = id3, id_household = id4, merge = `_merge`) %>% 
+  mutate( across( c( id_village, id_household, treatment, paire, demi_paire, 
+             selfempl_livestock, selfempl_agri, self_empl, merge, head_male ), factor) )
+
+dd2c <- dd2[dd2$merge != 2, ]
+
+```
+
+\newpage
+
+
+
+# Part 2.
+
+\textcolor{blue}
+{
+Analyze are the total output and total profit from self-employment activities in the past 12 months controlling using different covariates.
+}
+
+FE for pair of villages using the estimator within. The SE are corrected: We use robust SE and clusters at the paired villages level. The coefficient of interest is treatment
+
+
+```{r}
+
+# estimate the fixed effects regression with plm()
+lm_profit <- plm(profit_total ~ treatment + members_resid + nadults_resid + 
+                  selfempl_livestock + selfempl_agri + self_empl + loansamt_total + 
+                   head_age + head_male, 
+                    data = dd2c,
+                    index = c("paire"), 
+                    model = "within")
+
+lm_output <- plm(output_total ~ treatment + members_resid + nadults_resid + 
+                  selfempl_livestock + selfempl_agri + self_empl + loansamt_total + 
+                   head_age + head_male, 
+                    data = dd2c,
+                    index = c("paire"), 
+                    model = "within")
+
+# print summary using robust standard errors
+lmtest::coeftest(lm_profit, vcov. = vcovHC, type = "HC3", cluster = "group")
+lmtest::coeftest(lm_output, vcov. = vcovHC, type = "HC3", cluster = "group")
+
+```
+
+
+\newpage
+
+
+
+# Part 3.
+
+\textcolor{blue}
+{
+Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
+}
+
+First we make the 100 resamples using cluster bootstrapping by paired of villages. For these 100 resamples we apply the difference in means between the treatment and the control group. We can see the distribution of this simple statistic.
+
+
+
+```{r}
+
+boots <- rsample::group_bootstraps(dd2c, paire, times = 100)
+#boots
+dim(dd2c)
+
+first_resample <- boots$splits[[1]]
+first_resample
+
+```
+
+```{r}
+# Will be used to fit the models to different bootstrap data sets:
+fit_fun <- function(split, dep_var, ...) {
+  # We could check for convergence, make new parameters, etc.
+  boot <- analysis(split)
+  
+   mean( as.vector( boot[,dep_var][[1]] )[boot$treatment == 1], na.rm=T ) -
+    mean( as.vector( boot[,dep_var][[1]] )[boot$treatment == 0], na.rm=T )
+}
+
+```
+
+```{r}
+
+set.seed(123)
+boots_res_prof <- boots %>% 
+  mutate(stat = map(splits, ~ fit_fun(.x, "profit_total")))
+
+boots_res_out <- boots %>% 
+  mutate(stat = map(splits, ~ fit_fun(.x, "output_total")))
+
+```
+
+```{r}
+#| echo: false
+
+boot_star_prof <- mean( as.vector( dd2c[,"profit_total"][[1]] )[dd2c$treatment == 1], na.rm=T ) -
+    mean( as.vector( dd2c[,"profit_total"][[1]] )[dd2c$treatment == 0], na.rm=T )
+boot_star_prof
+
+boot_star_out <- mean( as.vector( dd2c[,"output_total"][[1]] )[dd2c$treatment == 1], na.rm=T ) -
+    mean( as.vector( dd2c[,"output_total"][[1]] )[dd2c$treatment == 0], na.rm=T )
+boot_star_out
+
+stat_res_out <- unlist(boots_res_out$stat)
+stat_res_out_df <- as.data.frame(stat_res_out) 
+names(stat_res_out_df) <- "boots_stat"
+
+ggplot(stat_res_out_df, aes(x=boots_stat)) +
+  geom_density( fill = "grey" ) +
+  geom_vline(aes(xintercept=boot_star),
+            color="red", linetype="dashed", size=1) +
+  theme_bw() + 
+  labs( y="", x ="Boot of difference in means", title="For Output"  )
+
+
+stat_res_prof <- unlist(boots_res_prof$stat)
+stat_res_prof_df <- as.data.frame(stat_res_prof) 
+names(stat_res_prof_df) <- "boots_stat"
+
+ggplot(stat_res_prof_df, aes(x=boots_stat)) +
+  geom_density( fill = "grey" ) +
+  geom_vline(aes(xintercept=boot_star),
+            color="red", linetype="dashed", size=1) +
+  theme_bw() + 
+  labs( y="", x ="Boot of difference in means", title="For Profit"  )
+
+
+```
+
+
+
+\newpage
+
+
+# Part 4.
+
+\textcolor{blue}
+{
+Estimate the effect of the treatment on the outcome using de-biased estimator. Construct predictions using random forest with two-fold cross-fitting. Estimate the standard error in the same way as in 3. and compare the results.
+}
+
+Consider an ex-post approach to improve the simple estimator of difference of means.
+
+
+```{r}
+colSums( is.na(dd2c), na.rm=T )
+
+dd2c_na <- dd2c %>% filter( rowSums( is.na(dd2c) ) == 0 )
+nrow(dd2c) - nrow(dd2c_na)
+```
+
+
+
+```{r}
+covariates <- c("loansamt_total", "members_resid", "nadults_resid", "selfempl_livestock", "selfempl_agri", "self_empl", "head_age", "head_male")
+
+#dd2c_na <- as.data.frame(dd2c_na)
+
+cv2 <- initial_split(dd2c_na, prop = 0.5)
+
+cv2_train <- training(cv2)
+cv2_train_treat <- cv2_train %>% filter(treatment == 1) %>% select( all_of(covariates)  )
+cv2_train_cont <- cv2_train %>% filter(treatment == 0) %>% select( all_of(covariates)  )
+
+cv2_train_treat_out <- cv2_train %>% filter(treatment == 1) %>% select( output_total ) %>% pull()
+cv2_train_cont_out <- cv2_train %>% filter(treatment == 0) %>% select( output_total ) %>% pull()
+# cv2_train_treat_prof <- cv2_train %>% filter(treatment == 1) %>% select( profit_total ) %>% pull()
+# cv2_train_cont_prof <-cv2_train %>% filter(treatment == 0) %>% select( profit_total ) %>% pull()
+
+cv2_test <- testing(cv2)
+cv2_test_treat <- cv2_test %>% filter(treatment == 1) %>% select( all_of(covariates)  )
+cv2_test_cont <- cv2_test %>% filter(treatment == 0) %>% select( all_of(covariates)  )
+
+cv2_test_treat_out <- cv2_test %>% filter(treatment == 1) %>% select( output_total ) %>% pull()
+cv2_test_cont_out <- cv2_test %>% filter(treatment == 0) %>% select( output_total ) %>% pull()
+# cv2_test_treat_prof <- cv2_test %>% filter(treatment == 1) %>% select( profit_total ) %>% pull()
+# cv2_test_cont_prof <- cv2_test %>% filter(treatment == 0) %>% select( profit_total ) %>% pull()
+
+mod_train_treat_out <- randomForest(x = cv2_train_treat, y = cv2_train_treat_out, ntree=100)
+mod_train_cont_out <- randomForest(x = cv2_train_cont, y = cv2_train_cont_out, ntree=100)
+mod_test_treat_out <- randomForest(x = cv2_test_treat, y = cv2_test_treat_out, ntree=100)
+mod_test_cont_out <- randomForest(x = cv2_test_cont, y = cv2_test_cont_out, ntree=100)
+
+pred_train_treat_out <- predict( mod_train_treat_out,  cv2_test_treat) 
+pred_train_cont_out <- predict( mod_train_cont_out,  cv2_test_cont)
+pred_test_treat_out <- predict( mod_test_treat_out,  cv2_train_treat)
+pred_test_cont_out <- predict( mod_test_cont_out,  cv2_train_cont)
+
+
+######################
+set_obs <- 1:nrow(dd2c_na)
+out_id <- set_obs[! set_obs %in% cv2$in_id]
+  
+pos_train_treat <- dd2c_na %>% slice(cv2$in_id) %>% filter(treatment==1) %>% pull(ident)
+pos_train_cont <- dd2c_na %>% slice(cv2$in_id) %>% filter(treatment==0) %>% pull(ident)
+pos_test_treat <- dd2c_na %>% slice(out_id) %>% filter(treatment==1) %>% pull(ident)
+pos_test_cont <- dd2c_na %>% slice(out_id) %>% filter(treatment==0) %>% pull(ident)
+
+
+pred_cond_mean <- c( pred_train_treat_out, pred_train_cont_out, pred_test_treat_out, pred_test_cont_out )
+id_obs <- c( pos_train_treat, pos_train_cont, pos_test_treat, pos_test_cont )
+df_cond_mean <- data.frame(id_obs, pred_cond_mean)
+
+dd2c_na_new <- inner_join(dd2c_na, df_cond_mean, by=c("ident" = "id_obs") )
+
+
+####### Calculate statistic #######
+
+dep_var <- "output_total"
+
+est_simple <- mean(  dd2c_na[,dep_var] %>% filter( dd2c_na$treatment == 1) %>% pull()  ) -
+          mean( dd2c_na[,dep_var] %>% filter( dd2c_na$treatment == 0) %>% pull() )
+
+treat <- as.integer(dd2c_na$treatment) - 1 
+pi1 <- mean(treat)
+pi0 <- 1 - pi1
+
+est_debiased <- est_simple - mean(   )
+  
+( treat/pi1 - 1 ) * 
+
+```
+
+
+\newpage
+
+
