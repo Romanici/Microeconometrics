@@ -1,35 +1,30 @@
 ---
-title: "HA 2: 2.1 Emripical Example"
+title: "2on problem set: Exercise 2.1"
 format: pdf
 editor: visual
-authors: Agustin Fernandez, Jiale Zhang
 ---
 
 ## Empirical example
-
-1.  The population the authors would like to analyze: Population in nondensely populated rural areas in Morocco between 2006 and 2007, where there is no other microcredit penetration before or after the introduction of the product and for the study.
-
-    The sample they ended up using: 4465 \* 92% + 1433 = 5551 households from 81 pairs of villages belonging to 47 branches. Branches are based on observable characteristics including number of households, accessibility to the center of the community, existing infrastructure, type of activities carried out by the households, type of agriculture activities.
-
-    And the households are selected based on their propensity to borrow, which is measured twice by using pilot data and later the whole sample and the census data. Specifically, in the 4465 households there are two samples from the top of the propensity score distribution and random positions of the distribution.
-
-    The detailed description of the treatment:
-
-    The detailed description of the experimental design: The study has three good features that make it a good complement to existing papers. First, there is no other microcredit penetration in the area studied, before or after introduction of the product, also they found the effect were mainly on the borrowers, so the exclusion assumption is satisfied to some extent since the product is unique. Second, their sampling design is good in the sense that it allows them to capture the effect on borrowers.
-
-Third, they proposed a strategy to test for externalities on nonborrowers, and to estimate direct effect on borrowers.
 
 **Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
 
 As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
 
+**Variables**
+a) **Identificators**: id_household, id_village, paire, demi_paire, client, _merge  
+b) **Dependent variables**: profit_total, output_total  
+c) **Covariates**: loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, head_age, head_male  
+
+
 ```{r}
+library(haven) # read dta data
 library(tidyverse)
 library(knitr)
-library(plm)
-library(haven)
-library(lmtest)
+library(plm) # FE regression
+library(lmtest) # coefficients FE reg.
+library(rsample) # bootstrapping
 ```
+
 
 ```{r}
 setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
@@ -41,28 +36,39 @@ dd <- read_dta(  paste0(dir_final_data,"final_before_replication.dta") )
 dim(dd)
 #View(dd)
 
+## Baseline and Endline datasets not needed
 dd_baseline <- read_dta(  paste0(dir_final_data,"baseline_minienquete_outcomes.dta") )
 dim(dd_baseline)
 dd_endline <- read_dta(  paste0(dir_final_data,"endline_minienquete_outcomes.dta") )
 dim(dd_endline)
 ```
 
-```{r}
 
+We have merge == 2 when the baseline observation was not interviewed again two years later for the Baseline interview. We can drop these observations since we don't have the outcomes.
+
+```{r}
 
 dd2 <- dd %>% 
   select(id3, id4, treatment, paire, demi_paire,  profit_total, output_total, client, loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, `_merge`, head_age, head_male) %>% 
   rename( id_village = id3, id_household = id4, merge = `_merge`) %>% 
-  mutate( across( c( id_village, id_household, treatment, paire, ident, 
-             selfempl_livestock, selfempl_agri, self_empl, merge ), factor) )
+  mutate( across( c( id_village, id_household, treatment, paire, demi_paire, ident, 
+             selfempl_livestock, selfempl_agri, self_empl, merge, head_male ), factor) )
 
 dd2c <- dd2[dd2$merge != 2, ]
 
 ```
 
+
+
 ## Part 2.
 
-Analyze are the total output and total profit from self-employment activities in the past 12 months.
+\textcolor{blue}
+Analyze are the total output and total profit from self-employment activities
+in the past 12 months controlling using different covariates. 
+{blue}
+
+FE for pair of villages using the estimator within. The SE are corrected: We use robust SE and clusters at the paired villages level. 
+The coefficient of interest is treatment
 
 ```{r}
 
@@ -86,6 +92,92 @@ lmtest::coeftest(lm_output, vcov. = vcovHC, type = "HC3", cluster = "group")
 
 ```
 
+
+
 ## Part 3.
 
+\textcolor{blue}
 Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
+{blue}
+
+First we make the 100 resamples using cluster bootstrapping by paired of villages. 
+For these 100 resamples we apply the difference in means between the treatment and the control group.
+We can see the distribution of this simple statistic. 
+
+```{r}
+
+boots <- rsample::group_bootstraps(dd2c, paire, times = 100)
+#boots
+dim(dd2c)
+
+first_resample <- boots$splits[[1]]
+first_resample
+
+
+```
+
+
+
+```{r}
+# Will be used to fit the models to different bootstrap data sets:
+fit_fun <- function(split, dep_var, ...) {
+  # We could check for convergence, make new parameters, etc.
+  boot <- analysis(split)
+  
+   mean( as.vector( boot[,dep_var][[1]] )[boot$treatment == 1], na.rm=T ) -
+    mean( as.vector( boot[,dep_var][[1]] )[boot$treatment == 0], na.rm=T )
+}
+
+
+```
+
+```{r}
+
+set.seed(123)
+boots_res <- boots %>% 
+  mutate(stat = map(splits, ~ fit_fun(.x, "profit_total")))
+boots_res
+
+```
+
+
+```{r}
+boot_star <- mean( as.vector( dd2c[,"profit_total"][[1]] )[dd2c$treatment == 1], na.rm=T ) -
+    mean( as.vector( dd2c[,"profit_total"][[1]] )[dd2c$treatment == 0], na.rm=T )
+
+
+stat_res <- unlist(boots_res$stat)
+hist(stat_res)
+abline(v=boot_star, col="red")
+
+
+
+```
+
+
+
+
+
+## Part 4.
+
+Estimate the effect of the treatment on the outcome using de-biased estimator. Construct predictions using random forest with two-fold cross-fitting. Estimate the standard error in the same way as in 3. and compare the results.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
