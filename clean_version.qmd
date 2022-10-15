@@ -4,7 +4,7 @@ format: pdf
 editor: visual
 ---
 
-## Empirical example
+## Part 1
 
 **Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
 
@@ -17,12 +17,19 @@ c) **Covariates**: loansamt_total, members_resid, nadults_resid, weightproba, id
 
 
 ```{r}
+#| output: false
+
 library(haven) # read dta data
 library(tidyverse)
 library(knitr)
 library(plm) # FE regression
 library(lmtest) # coefficients FE reg.
 library(rsample) # bootstrapping
+library(randomForest)
+
+library(devtools)
+install_github("swager/crossEstimation")
+library(crossEstimation)
 ```
 
 
@@ -31,7 +38,7 @@ Endline survey has 5551 observations and 5137 variables.
 The join of the two previous surveys has 5898 observations and 594 variables (after the preprocessing).
 
 
-```{r}
+```{r echo=FALSE}
 setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
 
 dir_data <- "dataset_folder/data_code/Input/"
@@ -184,6 +191,8 @@ ggplot(stat_res_df, aes(x=boots_stat)) +
 
 Estimate the effect of the treatment on the outcome using de-biased estimator. Construct predictions using random forest with two-fold cross-fitting. Estimate the standard error in the same way as in 3. and compare the results.
 
+
+Consider an ex-post approach to improve the simple estimator of difference of means. 
 
 ```{r}
 
