@@ -4,11 +4,74 @@ format: pdf
 editor: visual
 ---
 
+
+## Empirical example
+
+1.  **The population the authors would like to analyze**: Population in nondensely populated rural areas in Morocco between 2006 and 2007, where there is no other microcredit penetration before or after the introduction of the product and for the study.
+
+    **The sample they ended up using**: 4465 \* 92% + 1433 = 5551 households from 81 pairs of villages belonging to 47 branches. Branches are based on observable characteristics including number of households, accessibility to the center of the community, existing infrastructure, type of activities carried out by the households, type of agriculture activities.
+
+    And the households are selected based on their propensity to borrow, which is measured twice by using pilot data and later the whole sample and the census data. The first 4465 households are selected by the first propensity score and the 1433 households are later added using the second propensity score. Specifically, in the 4465 households there are two samples from the top of the propensity score distribution and random positions of the distribution, and they are from 4 different waves of the baseline survey.
+
+    *Note: The first model for propensity scores is based on regressors including*
+
+    *Does more than three self-employment activities*
+
+    *Does trading as self-employment activity*
+
+    *Share number of members with trading, services or handicraft as main activity to number of members*
+
+    *Owns land*
+
+    *Rents land*
+
+    *Have not bought agriculture productive assets over the past 12 months*
+
+    *Uses sickle and rake (in agriculture)*
+
+    *ln(# of olive and argan trees)*
+
+    *\# of cows bought over the past 12 months*
+
+    *Gets a pension*
+
+    *Has a radio*
+
+    *Has a fiber mat*
+
+    *Phone expenses over the past month (in MAD)*
+
+    *Clothes expenses over the past month (in MAD)*
+
+    *Had an outstanding formal loan over the past 12 months*
+
+    *ln(amount that would be able to reimburse monthly (in MAD))*
+
+    *Would be ready to form a 4-person group and guarantee a loan mutually*
+
+    *Would uptake a loan of 3,000 MAD to be repaid in 9 monthly installments of 400 MAD.*
+
+    *And it is conducted on households in the first wave six months after the introduction of the product.*
+
+    T**he detailed description of the treatment**: The microcredit product Al Amana offers is a group liability loan. Group are formed by three to four members who agree to mutually guarantee the reimbursement of their loans. After the baseline survey was completed in each wave, one treatment and one control village were randomly assigned within each pair. In treatment villages, credit agents started to promote microcredit and to provide loans immediately after the baseline survey. They visited villages once a week and performed various promotional activities: door-to-door campaigns, meetings with current and potential clients, contact with village associations, cooperatives, and women's centers, etc.
+
+    **The detailed description of the experimental design**: The authors used 81 pairs of villages in the population they intended to analyze. There were four waves of introduction of the product. Around 100 households in each of the 7 pairs of initial villages were surveyed extensively in the pilot case. One village in each pair is later chosen to be the treatment village and introduced the product. In the treatment villages, the households' credit take-up in the next six months were recorded. With the extensive data collected earlier as well as credit take-up, a model for propensity to borrow was estimated.
+
+    In the following three waves, authors conducted similar baseline surveys with same sampling strategy as the pilot wave, including variables that were found to have significant impact on the propensity score. Treatment and control villages were randomly selected within the pairs and same treatment were given to the treatment villages.
+
+    Two years later, the authors used the whole sample and census data to re-estimate credit take-up model. Using the new propensity score, they further selected 1433 households with even higher propensity scores to borrow. Also, the households in the top quartile of the score (in treatment and control group) and five other random households in the villages were interviewed again, this amount adds up to 4465.
+
 ## Part 1
+
 
 **Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
 
 As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
+
+**Variables** a) **Identificators**: id_household, id_village, paire, demi_paire, client, \_merge\
+b) **Dependent variables**: profit_total, output_total\
+c) **Covariates**: loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, head_age, head_male
+
 
 **Variables**
 a) **Identificators**: id_household, id_village, paire, demi_paire, client, _merge  
@@ -32,6 +95,10 @@ install_github("swager/crossEstimation")
 library(crossEstimation)
 ```
 
+Baseline survey has 4465 observations and 3963 variables. Endline survey has 5551 observations and 5137 variables. The join of the two previous surveys has 5898 observations and 594 variables (after the preprocessing).
+
+
+```{r}
 
 Baseline survey has 4465 observations and 3963 variables.
 Endline survey has 5551 observations and 5137 variables.
@@ -55,6 +122,9 @@ dd_endline <- read_dta(  paste0(dir_final_data,"endline_minienquete_outcomes.dta
 dim(dd_endline)
 ```
 
+We have merge == 2 when the baseline observation was not interviewed again two years later for the Baseline interview. We can drop these observations since we don't have the outcomes.
+
+```{r}
 
 We have merge == 2 when the baseline observation was not interviewed again two years later for the Baseline interview. We can drop these observations since we don't have the outcomes.
 
@@ -80,6 +150,16 @@ sum(dd$borrowed_total_m)
 
 ## Part 2.
 
+
+Analyze are the total output and total profit from self-employment activities in the past 12 months.
+
+
+\textcolor{blue}
+Analyze are the total output and total profit from self-employment activities in the past 12 months controlling using different covariates. {blue}
+
+FE for pair of villages using the estimator within. The SE are corrected: We use robust SE and clusters at the paired villages level. The coefficient of interest is treatment
+
+
 \textcolor{blue}
 Analyze are the total output and total profit from self-employment activities
 in the past 12 months controlling using different covariates. 
@@ -87,6 +167,7 @@ in the past 12 months controlling using different covariates.
 
 FE for pair of villages using the estimator within. The SE are corrected: We use robust SE and clusters at the paired villages level. 
 The coefficient of interest is treatment
+
 
 ```{r}
 
@@ -116,6 +197,14 @@ lmtest::coeftest(lm_output, vcov. = vcovHC, type = "HC3", cluster = "group")
 
 ## Part 3.
 
+
+Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
+
+\textcolor{blue}
+Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws). {blue}
+
+First we make the 100 resamples using cluster bootstrapping by paired of villages. For these 100 resamples we apply the difference in means between the treatment and the control group. We can see the distribution of this simple statistic.
+
 \textcolor{blue}
 Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
 {blue}
@@ -123,6 +212,7 @@ Estimate the effect of the treatment on the outcome using simple difference in m
 First we make the 100 resamples using cluster bootstrapping by paired of villages. 
 For these 100 resamples we apply the difference in means between the treatment and the control group.
 We can see the distribution of this simple statistic. 
+
 
 ```{r}
 
@@ -135,7 +225,6 @@ first_resample
 
 
 ```
-
 
 
 ```{r}
@@ -184,9 +273,6 @@ ggplot(stat_res_df, aes(x=boots_stat)) +
 ```
 
 
-
-
-
 ## Part 4.
 
 Estimate the effect of the treatment on the outcome using de-biased estimator. Construct predictions using random forest with two-fold cross-fitting. Estimate the standard error in the same way as in 3. and compare the results.
@@ -197,16 +283,6 @@ Consider an ex-post approach to improve the simple estimator of difference of me
 ```{r}
 
 ```
-
-
-
-
-
-
-
-
-
-
 
 
 
