@@ -33,6 +33,7 @@ authors: Agustin Fernandez, Jiale Zhang
 
     *\# of cows bought over the past 12 months*
 
+<<<<<<< Updated upstream
     *Gets a pension*
 
     *Has a radio*
@@ -64,6 +65,11 @@ authors: Agustin Fernandez, Jiale Zhang
 **Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
 
 As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
+=======
+**Variables** a) **Identificators**: id_household, id_village, paire, demi_paire, client, \_merge\
+b) **Dependent variables**: profit_total, output_total\
+c) **Covariates**: loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, head_age, head_male
+>>>>>>> Stashed changes
 
 ```{r}
 library(tidyverse)
@@ -73,6 +79,11 @@ library(haven)
 library(lmtest)
 ```
 
+<<<<<<< Updated upstream
+=======
+Baseline survey has 4465 observations and 3963 variables. Endline survey has 5551 observations and 5137 variables. The join of the two previous surveys has 5898 observations and 594 variables (after the preprocessing).
+
+>>>>>>> Stashed changes
 ```{r}
 setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
 
@@ -89,6 +100,11 @@ dd_endline <- read_dta(  paste0(dir_final_data,"endline_minienquete_outcomes.dta
 dim(dd_endline)
 ```
 
+<<<<<<< Updated upstream
+=======
+We have merge == 2 when the baseline observation was not interviewed again two years later for the Baseline interview. We can drop these observations since we don't have the outcomes.
+
+>>>>>>> Stashed changes
 ```{r}
 
 
@@ -104,7 +120,14 @@ dd2c <- dd2[dd2$merge != 2, ]
 
 ## Part 2.
 
+<<<<<<< Updated upstream
 Analyze are the total output and total profit from self-employment activities in the past 12 months.
+=======
+\textcolor{blue}
+Analyze are the total output and total profit from self-employment activities in the past 12 months controlling using different covariates. {blue}
+
+FE for pair of villages using the estimator within. The SE are corrected: We use robust SE and clusters at the paired villages level. The coefficient of interest is treatment
+>>>>>>> Stashed changes
 
 ```{r}
 
@@ -130,4 +153,75 @@ lmtest::coeftest(lm_output, vcov. = vcovHC, type = "HC3", cluster = "group")
 
 ## Part 3.
 
+<<<<<<< Updated upstream
 Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
+=======
+\textcolor{blue}
+Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws). {blue}
+
+First we make the 100 resamples using cluster bootstrapping by paired of villages. For these 100 resamples we apply the difference in means between the treatment and the control group. We can see the distribution of this simple statistic.
+
+```{r}
+
+boots <- rsample::group_bootstraps(dd2c, paire, times = 100)
+#boots
+dim(dd2c)
+
+first_resample <- boots$splits[[1]]
+first_resample
+
+
+```
+
+```{r}
+# Will be used to fit the models to different bootstrap data sets:
+fit_fun <- function(split, dep_var, ...) {
+  # We could check for convergence, make new parameters, etc.
+  boot <- analysis(split)
+  
+   mean( as.vector( boot[,dep_var][[1]] )[boot$treatment == 1], na.rm=T ) -
+    mean( as.vector( boot[,dep_var][[1]] )[boot$treatment == 0], na.rm=T )
+}
+
+
+```
+
+```{r}
+
+set.seed(123)
+boots_res <- boots %>% 
+  mutate(stat = map(splits, ~ fit_fun(.x, "profit_total")))
+boots_res
+
+```
+
+```{r}
+boot_star <- mean( as.vector( dd2c[,"profit_total"][[1]] )[dd2c$treatment == 1], na.rm=T ) -
+    mean( as.vector( dd2c[,"profit_total"][[1]] )[dd2c$treatment == 0], na.rm=T )
+
+
+stat_res <- unlist(boots_res$stat)
+stat_res_df <- as.data.frame(stat_res) 
+names(stat_res_df) <- "boots_stat"
+
+hist(stat_res)
+abline(v=boot_star, col="red")
+
+
+ggplot(stat_res_df, aes(x=boots_stat)) +
+  geom_density( fill = "grey" ) +
+  geom_vline(aes(xintercept=boot_star),
+            color="red", linetype="dashed", size=1) +
+  theme_bw() + 
+  labs( y="", x ="Boot of difference in means"  )
+
+```
+
+## Part 4.
+
+Estimate the effect of the treatment on the outcome using de-biased estimator. Construct predictions using random forest with two-fold cross-fitting. Estimate the standard error in the same way as in 3. and compare the results.
+
+```{r}
+
+```
+>>>>>>> Stashed changes
