@@ -1,9 +1,9 @@
 ---
-title: "HA 2: 2.1 Emripical Example"
+title: "2on problem set: Exercise 2.1"
 format: pdf
 editor: visual
-authors: Agustin Fernandez, Jiale Zhang
 ---
+
 
 ## Empirical example
 
@@ -33,7 +33,6 @@ authors: Agustin Fernandez, Jiale Zhang
 
     *\# of cows bought over the past 12 months*
 
-<<<<<<< Updated upstream
     *Gets a pension*
 
     *Has a radio*
@@ -62,29 +61,51 @@ authors: Agustin Fernandez, Jiale Zhang
 
     Two years later, the authors used the whole sample and census data to re-estimate credit take-up model. Using the new propensity score, they further selected 1433 households with even higher propensity scores to borrow. Also, the households in the top quartile of the score (in treatment and control group) and five other random households in the villages were interviewed again, this amount adds up to 4465.
 
+## Part 1
+
+
 **Two outcome variables:** total output and total profit from self-employment activities in the past 12 months.
 
 As covariates use baseline household characteristics such as number of members, number of adults, head age, indicators for households doing animal husbandry, doing other non-agricultural activity, having an outstanding loan over the past 12 months, household spouse responded to the survey, another household member (excluding the household head) responded to the survey, and 81 village pair fixed effects.
-=======
+
 **Variables** a) **Identificators**: id_household, id_village, paire, demi_paire, client, \_merge\
 b) **Dependent variables**: profit_total, output_total\
 c) **Covariates**: loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, head_age, head_male
->>>>>>> Stashed changes
+
+
+**Variables**
+a) **Identificators**: id_household, id_village, paire, demi_paire, client, _merge  
+b) **Dependent variables**: profit_total, output_total  
+c) **Covariates**: loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, head_age, head_male  
+
 
 ```{r}
+#| output: false
+
+library(haven) # read dta data
 library(tidyverse)
 library(knitr)
-library(plm)
-library(haven)
-library(lmtest)
+library(plm) # FE regression
+library(lmtest) # coefficients FE reg.
+library(rsample) # bootstrapping
+library(randomForest)
+
+library(devtools)
+install_github("swager/crossEstimation")
+library(crossEstimation)
 ```
 
-<<<<<<< Updated upstream
-=======
 Baseline survey has 4465 observations and 3963 variables. Endline survey has 5551 observations and 5137 variables. The join of the two previous surveys has 5898 observations and 594 variables (after the preprocessing).
 
->>>>>>> Stashed changes
+
 ```{r}
+
+Baseline survey has 4465 observations and 3963 variables.
+Endline survey has 5551 observations and 5137 variables.
+The join of the two previous surveys has 5898 observations and 594 variables (after the preprocessing).
+
+
+```{r echo=FALSE}
 setwd("/Users/agustinff/Desktop/cemfi/2on_year/micrometrics/psets/pset2/practice")
 
 dir_data <- "dataset_folder/data_code/Input/"
@@ -94,52 +115,73 @@ dd <- read_dta(  paste0(dir_final_data,"final_before_replication.dta") )
 dim(dd)
 #View(dd)
 
+## Baseline and Endline datasets not needed
 dd_baseline <- read_dta(  paste0(dir_final_data,"baseline_minienquete_outcomes.dta") )
 dim(dd_baseline)
 dd_endline <- read_dta(  paste0(dir_final_data,"endline_minienquete_outcomes.dta") )
 dim(dd_endline)
 ```
 
-<<<<<<< Updated upstream
-=======
 We have merge == 2 when the baseline observation was not interviewed again two years later for the Baseline interview. We can drop these observations since we don't have the outcomes.
 
->>>>>>> Stashed changes
 ```{r}
 
+We have merge == 2 when the baseline observation was not interviewed again two years later for the Baseline interview. We can drop these observations since we don't have the outcomes.
+
+
+```{r}
 
 dd2 <- dd %>% 
   select(id3, id4, treatment, paire, demi_paire,  profit_total, output_total, client, loansamt_total, members_resid, nadults_resid, weightproba, ident, selfempl_livestock, selfempl_agri, self_empl, `_merge`, head_age, head_male) %>% 
   rename( id_village = id3, id_household = id4, merge = `_merge`) %>% 
-  mutate( across( c( id_village, id_household, treatment, paire, ident, 
-             selfempl_livestock, selfempl_agri, self_empl, merge ), factor) )
+  mutate( across( c( id_village, id_household, treatment, paire, demi_paire, ident, 
+             selfempl_livestock, selfempl_agri, self_empl, merge, head_male ), factor) )
 
 dd2c <- dd2[dd2$merge != 2, ]
 
+
+summary(dd2c$loansamt_total)
+sum(dd$borrowed_total)
+sum(dd$borrowed_total_bl)
+sum(dd$borrowed_total_d_bl)
+sum(dd$borrowed_total_m)
 ```
+
 
 ## Part 2.
 
-<<<<<<< Updated upstream
+
 Analyze are the total output and total profit from self-employment activities in the past 12 months.
-=======
+
+
 \textcolor{blue}
 Analyze are the total output and total profit from self-employment activities in the past 12 months controlling using different covariates. {blue}
 
 FE for pair of villages using the estimator within. The SE are corrected: We use robust SE and clusters at the paired villages level. The coefficient of interest is treatment
->>>>>>> Stashed changes
+
+
+\textcolor{blue}
+Analyze are the total output and total profit from self-employment activities
+in the past 12 months controlling using different covariates. 
+{blue}
+
+FE for pair of villages using the estimator within. The SE are corrected: We use robust SE and clusters at the paired villages level. 
+The coefficient of interest is treatment
+
 
 ```{r}
 
 # estimate the fixed effects regression with plm()
 lm_profit <- plm(profit_total ~ treatment + members_resid + nadults_resid + 
-                  selfempl_livestock + selfempl_agri + self_empl, 
+                  selfempl_livestock + selfempl_agri + self_empl + loansamt_total + 
+                   head_age + head_male, 
                     data = dd2c,
                     index = c("paire"), 
                     model = "within")
 
 lm_output <- plm(output_total ~ treatment + members_resid + nadults_resid + 
-                  selfempl_livestock + selfempl_agri + self_empl, 
+                  selfempl_livestock + selfempl_agri + self_empl + loansamt_total + 
+                   head_age + head_male, 
                     data = dd2c,
                     index = c("paire"), 
                     model = "within")
@@ -151,15 +193,26 @@ lmtest::coeftest(lm_output, vcov. = vcovHC, type = "HC3", cluster = "group")
 
 ```
 
+
+
 ## Part 3.
 
-<<<<<<< Updated upstream
+
 Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
-=======
+
 \textcolor{blue}
 Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws). {blue}
 
 First we make the 100 resamples using cluster bootstrapping by paired of villages. For these 100 resamples we apply the difference in means between the treatment and the control group. We can see the distribution of this simple statistic.
+
+\textcolor{blue}
+Estimate the effect of the treatment on the outcome using simple difference in means. Use village-pair level bootstrap to estimate the standard error (use B = 100 boostratp draws).
+{blue}
+
+First we make the 100 resamples using cluster bootstrapping by paired of villages. 
+For these 100 resamples we apply the difference in means between the treatment and the control group.
+We can see the distribution of this simple statistic. 
+
 
 ```{r}
 
@@ -172,6 +225,7 @@ first_resample
 
 
 ```
+
 
 ```{r}
 # Will be used to fit the models to different bootstrap data sets:
@@ -195,6 +249,7 @@ boots_res
 
 ```
 
+
 ```{r}
 boot_star <- mean( as.vector( dd2c[,"profit_total"][[1]] )[dd2c$treatment == 1], na.rm=T ) -
     mean( as.vector( dd2c[,"profit_total"][[1]] )[dd2c$treatment == 0], na.rm=T )
@@ -217,11 +272,24 @@ ggplot(stat_res_df, aes(x=boots_stat)) +
 
 ```
 
+
 ## Part 4.
 
 Estimate the effect of the treatment on the outcome using de-biased estimator. Construct predictions using random forest with two-fold cross-fitting. Estimate the standard error in the same way as in 3. and compare the results.
 
+
+Consider an ex-post approach to improve the simple estimator of difference of means. 
+
 ```{r}
 
 ```
->>>>>>> Stashed changes
+
+
+
+
+
+
+
+
+
+
