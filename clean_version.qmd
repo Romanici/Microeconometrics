@@ -7,6 +7,8 @@ authors: Agustin Fernandez, Jiale Zhang
 
 ## Empirical example
 
+## Part 1.
+
 1.  **The population the authors would like to analyze**: Population in nondensely populated rural areas in Morocco between 2006 and 2007, where there is no other microcredit penetration before or after the introduction of the product and for the study.
 
     **The sample they ended up using**: 4465 \* 92% + 1433 = 5551 households from 81 pairs of villages belonging to 47 branches. Branches are based on observable characteristics including number of households, accessibility to the center of the community, existing infrastructure, type of activities carried out by the households, type of agriculture activities.
